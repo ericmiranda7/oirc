@@ -57,25 +57,38 @@ func resHandler(conn net.Conn) {
 			// pring msg
 			pingId := resp[strings.Index(resp, ":")+1:]
 			fmt.Fprintf(conn, "PONG :%s", pingId)
+		} else {
+			ParseMsg(resp)
 		}
 
-		ParseMsg(resp)
 	}
 }
 
 func ParseMsg(message string) (string, string, []string) {
 	log.Println("msg: ", message)
-	tokens := strings.Split(message, " ")
 	origin := ""
 	cmd := ""
+	// todo(): opt target
 	var params []string
-	if strings.HasPrefix(message, ":") {
+
+	tokens := strings.SplitN(message, " ", 3)
+	cmd = tokens[0]
+	if strings.HasPrefix(tokens[0], ":") {
 		origin = tokens[0][1:]
 		cmd = tokens[1]
-		params = tokens[2:]
-	} else {
-		cmd = tokens[0]
-		params = tokens[1:]
+	}
+
+	if len(tokens) == 3 {
+		if strings.Contains(tokens[2], ":") {
+			trailing := tokens[2][strings.Index(tokens[2], ":")+1:]
+			middle := strings.Trim(tokens[2][:strings.Index(tokens[2], ":")], " ")
+			if middle != "" {
+				params = strings.Split(middle, " ")
+			}
+			params = append(params, trailing)
+		} else {
+			params = strings.Split(tokens[2], " ")
+		}
 	}
 
 	return origin, cmd, params
