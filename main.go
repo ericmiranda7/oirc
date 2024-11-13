@@ -31,14 +31,20 @@ func main() {
 		}
 
 		cmd := is.Text()
-		handleCmd(cmd)
+		handleCmd(cmd, conn)
 	}
 }
 
-func handleCmd(cmd string) {
-	switch cmd {
-	case "/join":
-		return
+func handleCmd(cmd string, conn net.Conn) {
+	switch {
+	case strings.HasPrefix(cmd, "/join"):
+		cn := cmd[strings.Index(cmd, " ")+1:]
+		fmt.Fprintf(conn, "JOIN %v\n", cn)
+
+	case strings.HasPrefix(cmd, "/part"):
+		cn := cmd[strings.Index(cmd, " ")+1:]
+		fmt.Fprintf(conn, "PART %v\n", cn)
+
 	}
 }
 
@@ -68,7 +74,6 @@ func ParseMsg(message string) (string, string, []string) {
 	log.Println("msg: ", message)
 	origin := ""
 	cmd := ""
-	// todo(): opt target
 	var params []string
 
 	tokens := strings.SplitN(message, " ", 3)
