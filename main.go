@@ -31,11 +31,11 @@ func main() {
 		}
 
 		cmd := is.Text()
-		handleCmd(cmd, conn)
+		handleInpCmd(cmd, conn)
 	}
 }
 
-func handleCmd(cmd string, conn net.Conn) {
+func handleInpCmd(cmd string, conn net.Conn) {
 	switch {
 	case strings.HasPrefix(cmd, "/join"):
 		cn := cmd[strings.Index(cmd, " ")+1:]
@@ -45,6 +45,9 @@ func handleCmd(cmd string, conn net.Conn) {
 		cn := cmd[strings.Index(cmd, " ")+1:]
 		fmt.Fprintf(conn, "PART %v\n", cn)
 
+	case strings.HasPrefix(cmd, "/nick"):
+		nn := cmd[strings.Index(cmd, " ")+1:]
+		fmt.Fprintf(conn, "NICK %v\n", nn)
 	}
 }
 
@@ -64,9 +67,19 @@ func resHandler(conn net.Conn) {
 			pingId := resp[strings.Index(resp, ":")+1:]
 			fmt.Fprintf(conn, "PONG :%s", pingId)
 		} else {
-			ParseMsg(resp)
+			origin, cmd, params := ParseMsg(resp)
+			handleResCmd(origin, cmd, params)
 		}
 
+	}
+}
+
+func handleResCmd(origin string, cmd string, params []string) {
+	switch cmd {
+	case "NICK":
+		oldNn := origin[:strings.Index(origin, "!")]
+		newNn := params[0]
+		fmt.Printf("\033[32m"+"MESO: %v is now known as %v\n"+"\033[0m", oldNn, newNn)
 	}
 }
 
