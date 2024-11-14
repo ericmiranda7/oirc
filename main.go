@@ -9,20 +9,25 @@ import (
 	"strings"
 )
 
+var joinedChannel string = ""
+
 func main() {
 	// raw connection to irc.freenode
 	conn, err := net.Dial("tcp", "irc.freenode.net:6667")
 	if err != nil {
 		log.Fatal("over")
 	}
+	is := bufio.NewScanner(os.Stdin)
+	fmt.Print("Enter nickname: ")
+	is.Scan()
+	nn := is.Text()
 
 	// send 2 messages
-	fmt.Fprintf(conn, "NICK CCClient\n")
+	fmt.Fprintf(conn, "NICK %v\n", nn)
 	fmt.Fprintf(conn, "USER guest 0 * :Coding Challenges Client\n")
 
 	go resHandler(conn)
 
-	is := bufio.NewScanner(os.Stdin)
 	for {
 		is.Scan()
 		err := is.Err()
@@ -40,14 +45,19 @@ func handleInpCmd(cmd string, conn net.Conn) {
 	case strings.HasPrefix(cmd, "/join"):
 		cn := cmd[strings.Index(cmd, " ")+1:]
 		fmt.Fprintf(conn, "JOIN %v\n", cn)
+		joinedChannel = cn
 
 	case strings.HasPrefix(cmd, "/part"):
 		cn := cmd[strings.Index(cmd, " ")+1:]
 		fmt.Fprintf(conn, "PART %v\n", cn)
+		joinedChannel = ""
 
 	case strings.HasPrefix(cmd, "/nick"):
 		nn := cmd[strings.Index(cmd, " ")+1:]
 		fmt.Fprintf(conn, "NICK %v\n", nn)
+
+	case !strings.HasPrefix(cmd, "/"):
+		fmt.Fprintf(conn, "PRIVMSG %v :%v\n", joinedChannel, cmd)
 	}
 }
 
@@ -65,7 +75,7 @@ func resHandler(conn net.Conn) {
 		if strings.HasPrefix(resp, "PING") {
 			// pring msg
 			pingId := resp[strings.Index(resp, ":")+1:]
-			fmt.Fprintf(conn, "PONG :%s", pingId)
+			fmt.Fprintf(conn, "PONG :%s\n", pingId)
 		} else {
 			origin, cmd, params := ParseMsg(resp)
 			handleResCmd(origin, cmd, params)
@@ -80,6 +90,10 @@ func handleResCmd(origin string, cmd string, params []string) {
 		oldNn := origin[:strings.Index(origin, "!")]
 		newNn := params[0]
 		fmt.Printf("\033[32m"+"MESO: %v is now known as %v\n"+"\033[0m", oldNn, newNn)
+
+	case "PRIVMSG":
+		sender := origin[:strings.Index(origin, "!")]
+		fmt.Printf("\033[32m"+"%v: %v\n"+"\033[0m", sender, params[1])
 	}
 }
 
