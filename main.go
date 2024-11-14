@@ -58,6 +58,9 @@ func handleInpCmd(cmd string, conn net.Conn) {
 
 	case !strings.HasPrefix(cmd, "/"):
 		fmt.Fprintf(conn, "PRIVMSG %v :%v\n", joinedChannel, cmd)
+
+	case strings.HasPrefix(cmd, "/quit"):
+		fmt.Fprintf(conn, "QUIT: message\n")
 	}
 }
 
@@ -94,6 +97,10 @@ func handleResCmd(origin string, cmd string, params []string) {
 	case "PRIVMSG":
 		sender := origin[:strings.Index(origin, "!")]
 		fmt.Printf("\033[32m"+"%v: %v\n"+"\033[0m", sender, params[1])
+
+	case "QUIT":
+		leaver := origin[:strings.Index(origin, "!")]
+		fmt.Printf("\033[32m"+"%v quit IRC. Message: %v\n"+"\033[0m", leaver, params[0])
 	}
 }
 
